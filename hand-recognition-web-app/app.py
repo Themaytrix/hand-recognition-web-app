@@ -155,7 +155,7 @@ def augment(number,landmark,num_shift,shift_intensity):
     #we are calling funtion inside the while loop
     
     
-    def _shift_diagnol_up(mode,number,landmark):
+    def _shift_diagnol_up(number,landmark):
         for x in range(num_shift):
             new_point = np.reshape(shift_intensity, (1, 1)) + landmark
             #print(f'this is new points {new_point}')
@@ -167,61 +167,54 @@ def augment(number,landmark,num_shift,shift_intensity):
 
             landmark = new_point
             
-    def _shift_diagnol_down(mode,number,landmark):
+    def _shift_diagnol_down(number,landmark):
         for x in range(num_shift):
             new_point = np.reshape(-shift_intensity, (1, 1)) + landmark
-            #print(f'this is new points {new_point}')
-            ##writing into csv target file
-            csv_path = 'target.csv'
-            with open(csv_path, 'a', newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([number, *new_point])
-
+            writeable = list(itertools.chain.from_iterable(new_point))
+            logginglandmarks(number,writeable)
             landmark = new_point
             
-    def _shift_right(mode,number,landmark):
+    def _shift_right(number,landmark):
         for x in range(num_shift):
-            new_point = [shift_intensity,0]+ landmark
-            ##writing into csv target file
-            csv_path = 'target.csv'
-            with open(csv_path, 'a', newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([number, *new_point])
+            new_point = [[shift_intensity,0]]+ landmark
+            writeable = list(itertools.chain.from_iterable(new_point))
+            logginglandmarks(number,writeable)
             landmark = new_point
 
 
-    def _shift_left(mode,number,landmark):
+    def _shift_left(number,landmark):
         for x in range(num_shift):
-            new_point = [-shift_intensity, 0] + landmark
+            new_point = [[-shift_intensity, 0]] + landmark
             ##writing into csv target file
-            csv_path = 'target.csv'
-            with open(csv_path, 'a', newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([number, *new_point])
+            writeable = list(itertools.chain.from_iterable(new_point))
+            logginglandmarks(number,writeable)
             landmark = new_point
-    def shift_up(mode,number,landmark):
+            
+    def _shift_up(number,landmark):
+        # if number >-1:
         for x in range(num_shift):
-            new_point = [0,-shift_intensity] + landmark
+            new_point = [[0,-shift_intensity]] + landmark
             ##writing into csv target file
-            csv_path = 'target.csv'
-            with open(csv_path, 'a', newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([number, *new_point])
+            writeable = list(itertools.chain.from_iterable(new_point))
+            logginglandmarks(number,writeable)
             landmark = new_point
     def _shift_down(number,landmark):
         # if number >-1:
         for x in range(num_shift):
             new_point = [[0,shift_intensity]] + landmark
             ##writing into csv target file
-            print(new_point)
             writeable = list(itertools.chain.from_iterable(new_point))
-            # print(new_point)
             logginglandmarks(number,writeable)
             landmark = new_point
                 
     
     if number >= 0:       
         _shift_down(number,landmark)
+        _shift_up(number,landmark)
+        _shift_left(number,landmark)
+        _shift_right(number,landmark)
+        _shift_diagnol_down(number,landmark)
+        _shift_diagnol_up(number,landmark)
     
     # _shift_diagnol_down(landmark)
     # _shift_diagnol_up(landmark)
