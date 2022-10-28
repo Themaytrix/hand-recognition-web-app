@@ -8,6 +8,11 @@ import cv2
 import numpy as np
 import copy
 import itertools
+import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.model_selection import train_test_split
+import random
+
 
 def main():
     ##mediapipe solutions
@@ -23,7 +28,10 @@ def main():
             default_index= 0
         )
         
-        
+    #reading label
+    with open('label.csv', encoding='utf-8-sig') as f:
+        keypoint_labels = csv.reader(f)
+        keypoint_labels = [row[0] for row in keypoint_labels]    
         
     if select == 'Home':
         st.title('Hand Gesture Recognition web-app')
@@ -93,6 +101,31 @@ def main():
                                 capture = False
                     FRAME_WINDOW.image(frame,width=450)
                     
+    if select ==  'Train':
+        st.markdown("# Training",unsafe_allow_html=True)
+        num_classes = len(keypoint_labels)
+        st.write('Number of classes:',num_classes)
+        ## reading data points
+        dataframe = pd.read_csv("landmarks.csv", header=None)
+        x = dataframe.iloc[:,1:43].values
+        y = dataframe.iloc[:,0].values
+        with st.expander('View Data Frames'):
+            st.text('Dataframe')
+            st.dataframe(dataframe)
+
+def dataPreprocessing(x,y):
+    ##Normalizing handlandmarks between 0 and 1
+    sc = MinMaxScaler(feature_range=(0,1))
+    x_scaled =sc.fit_transform(x)
+    ##Splitting handlandmarks to training and test sets
+    x_train,x_test,y_train,y_test = train_test_split(x_scaled,y,test_size=0.2,random_state=0)
+    return x_train,x_test,y_train,y_test
+
+def build_nn():
+    pass
+    
+            
+    
         
         
         
@@ -157,26 +190,21 @@ def augment(number,landmark,num_shift,shift_intensity):
     
     def _shift_diagnol_up(number,landmark):
         for x in range(num_shift):
-            new_point = np.reshape(shift_intensity, (1, 1)) + landmark
-            #print(f'this is new points {new_point}')
-            ##writing into csv target file
-            csv_path = 'target.csv'
-            with open(csv_path, 'a', newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([number, *new_point])
-
+            new_point = np.reshape(random.randint(-50,50), (1, 1)) + landmark
+            writeable = list(itertools.chain.from_iterable(new_point))
+            logginglandmarks(number,writeable)
             landmark = new_point
             
     def _shift_diagnol_down(number,landmark):
         for x in range(num_shift):
-            new_point = np.reshape(-shift_intensity, (1, 1)) + landmark
+            new_point = np.reshape(-random.randint(-50,50), (1, 1)) + landmark
             writeable = list(itertools.chain.from_iterable(new_point))
             logginglandmarks(number,writeable)
             landmark = new_point
             
     def _shift_right(number,landmark):
         for x in range(num_shift):
-            new_point = [[shift_intensity,0]]+ landmark
+            new_point = [[random.randint(-50,50),0]]+ landmark
             writeable = list(itertools.chain.from_iterable(new_point))
             logginglandmarks(number,writeable)
             landmark = new_point
@@ -184,7 +212,7 @@ def augment(number,landmark,num_shift,shift_intensity):
 
     def _shift_left(number,landmark):
         for x in range(num_shift):
-            new_point = [[-shift_intensity, 0]] + landmark
+            new_point = [[random.randint(-50,50), 0]] + landmark
             ##writing into csv target file
             writeable = list(itertools.chain.from_iterable(new_point))
             logginglandmarks(number,writeable)
@@ -193,7 +221,7 @@ def augment(number,landmark,num_shift,shift_intensity):
     def _shift_up(number,landmark):
         # if number >-1:
         for x in range(num_shift):
-            new_point = [[0,-shift_intensity]] + landmark
+            new_point = [[0,-random.randint(-50,50)]] + landmark
             ##writing into csv target file
             writeable = list(itertools.chain.from_iterable(new_point))
             logginglandmarks(number,writeable)
@@ -201,7 +229,7 @@ def augment(number,landmark,num_shift,shift_intensity):
     def _shift_down(number,landmark):
         # if number >-1:
         for x in range(num_shift):
-            new_point = [[0,shift_intensity]] + landmark
+            new_point = [[0,random.randint(-50,50)]] + landmark
             ##writing into csv target file
             writeable = list(itertools.chain.from_iterable(new_point))
             logginglandmarks(number,writeable)
