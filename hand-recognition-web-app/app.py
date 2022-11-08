@@ -11,7 +11,11 @@ import itertools
 import matplotlib.pyplot as plt
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
+from keras.models import Sequential
+from keras.layers import Dense,Dropout
+from keras.callbacks import ModelCheckpoint,EarlyStopping
 import random
+
 
 
 def main():
@@ -19,6 +23,9 @@ def main():
     mp_drawing = mp.solutions.drawing_utils
     mp_drawing_styles = mp.solutions.drawing_styles
     mp_hands = mp.solutions.hands
+    saved_model_path = 'models/savedkeypoints.h5'
+    tflite_model_path = 'models/savedkeypointclassifies.tflite'
+    
     with open('style.css') as f:
         st.markdown(f'<style>{f.read()}</style>',unsafe_allow_html= True)
     with st.sidebar:
@@ -102,6 +109,7 @@ def main():
                     FRAME_WINDOW.image(frame,width=450)
                     
     if select ==  'Train':
+        classifier = Sequential()
         st.markdown("# Training",unsafe_allow_html=True)
         num_classes = len(keypoint_labels)
         st.write('Number of classes:',num_classes)
@@ -110,8 +118,24 @@ def main():
         x = dataframe.iloc[:,1:43].values
         y = dataframe.iloc[:,0].values
         with st.expander('View Data Frames'):
+            ##sumarize the df
             st.text('Dataframe')
             st.dataframe(dataframe)
+        ##preprocess data
+        x_train,x_test,y_train,y_test = dataPreprocessing(x,y)
+        ##build and compile
+        ##
+        ##set a button to build nn
+        build_nn(num_classes,classifier)
+        cp_callback = ModelCheckpoint(saved_model_path,verbose=1,save_weights_only=False)
+        es_callback =EarlyStopping(patience=20, verbose = 1)
+        classifier.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+        ##train preprocessed data
+        if st.button('TRAIN'):
+            with st.echo():
+                
+                classifier.fit(x_train,y_train,epochs=10, batch_size=64,callbacks=[cp_callback,es_callback],validation_data=(x_test,y_test))
+        
 
 def dataPreprocessing(x,y):
     ##Normalizing handlandmarks between 0 and 1
@@ -121,14 +145,15 @@ def dataPreprocessing(x,y):
     x_train,x_test,y_train,y_test = train_test_split(x_scaled,y,test_size=0.2,random_state=0)
     return x_train,x_test,y_train,y_test
 
-def build_nn():
-    pass
+def build_nn(num_classes,classifier):
+    classifier.add(Dense(42,activation='relu',input_shape =(42,)))
+    classifier.add(Dropout(0.4))
+    classifier.add(Dense(50, activation='relu'))
+    classifier.add(Dropout(0.4))
+    classifier.add(Dense(32,activation='relu'))
+    classifier.add(Dropout(0.2))
+    classifier.add(Dense(num_classes,activation='softmax'))
     
-            
-    
-        
-        
-        
 ##writing labels to csv
 def loglabels(text):
     csv_path = 'label.csv'
