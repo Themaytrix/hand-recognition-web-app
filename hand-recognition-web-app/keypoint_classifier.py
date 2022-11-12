@@ -4,7 +4,7 @@ import numpy as np
 ##class to for inferencing model results
 class KeyPointClassifier():
     def __init__(self, 
-                model_path = 'hand-recognition-web-app/models/savedkeypointclassifies.tflite',
+                model_path = 'models/savedkeypointclassifies.tflite',
                 num_threads =1):
         self.interpreter = tf.lite.Interpreter(model_path = model_path, num_threads=num_threads)
         self.interpreter.allocate_tensors()
