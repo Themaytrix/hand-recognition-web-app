@@ -20,6 +20,7 @@ from keypoint_classifier import KeyPointClassifier
 from sklearn.metrics import confusion_matrix
 import tensorflow as tf
 import random
+import time
 
 
 
@@ -139,8 +140,8 @@ def main():
         ##train preprocessed data
         if st.button('TRAIN'):
             classifier.fit(x_train,y_train,epochs=10, batch_size=64,callbacks=[cp_callback,es_callback],validation_data=(x_test,y_test))
-        # work on progress bar
-        
+            Accuracy =classifier.evaluate(x_test,y_test)
+            st.write('Training Successful with Accuracy:', Accuracy[1])
         
         
         
@@ -154,7 +155,7 @@ def main():
         plot_cm = st.sidebar.checkbox('Plot Confusion Matrix')
         if plot_cm:
             plot_confusion_matrix(cm,classes=keypoint_labels)
-            st.pyplot()
+            # st.pyplot()
         
         model.save(saved_model_path)
         save_tflite = st.button('Save tflite')
@@ -164,6 +165,9 @@ def main():
             tflite_model = converter.convert()
             open(tflite_model_path, "wb").write(tflite_model)
             save_tflite = False   
+            
+            
+            
     if select == "Inference":
         keypoint_classifier = KeyPointClassifier()
         
@@ -208,11 +212,10 @@ def dataPreprocessing(x,y):
 
 def build_nn(num_classes,classifier):
     classifier.add(Dense(42,activation='relu',input_shape =(42,)))
-    classifier.add(Dropout(0.4))
-    classifier.add(Dense(50, activation='relu'))
-    classifier.add(Dropout(0.4))
-    classifier.add(Dense(32,activation='relu'))
     classifier.add(Dropout(0.2))
+    classifier.add(Dense(20, activation='relu'))
+    classifier.add(Dropout(0.4))
+    classifier.add(Dense(10, activation='relu'))
     classifier.add(Dense(num_classes,activation='softmax'))
     
 
@@ -226,6 +229,7 @@ def plot_confusion_matrix(cm, classes,
     This function prints and plots the confusion matrix.
     Normalization can be applied by setting `normalize=True`.
     """
+    fig,ax = plt.subplots()
     plt.imshow(cm, interpolation='nearest', cmap=cmap)
     plt.title(title)
     plt.colorbar()
@@ -248,6 +252,7 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
     plt.ylabel('True label')
     plt.xlabel('Predicted label')
+    st.pyplot(fig)
 
 ##-------------------------------------------GETTING AND WRITING LMS ---------------------------------------------------
 ##writing labels to csv
@@ -325,14 +330,14 @@ def augment(number,landmark,num_shift):
     
     def _shift_diagnol_up(number,landmark):
         for x in range(num_shift):
-            new_point = np.reshape(random.randint(-50,50), (1, 1)) + landmark
+            new_point = np.reshape(random.randint(-100,100), (1, 1)) + landmark
             writeable = list(itertools.chain.from_iterable(new_point))
             logginglandmarks(number,writeable)
             landmark = new_point
             
     def _shift_diagnol_down(number,landmark):
         for x in range(num_shift):
-            new_point = np.reshape(-random.randint(-50,50), (1, 1)) + landmark
+            new_point = np.reshape(-random.randint(-100,100), (1, 1)) + landmark
             writeable = list(itertools.chain.from_iterable(new_point))
             logginglandmarks(number,writeable)
             landmark = new_point
