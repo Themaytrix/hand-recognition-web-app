@@ -1,25 +1,26 @@
 ###--------------------------------Imports---------------------------------------------------------
-import streamlit as st
-from streamlit_option_menu import option_menu
-import csv
-import mediapipe as mp
-import pandas as pd
-import cv2
-import numpy as np
 import copy
+import csv
 import itertools
-import matplotlib.pyplot as plt
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.model_selection import train_test_split
-from keras.models import Sequential
-from keras.layers import Dense, Dropout
-from keras.callbacks import ModelCheckpoint, EarlyStopping
-from keras.models import load_model
-from keypoint_classifier import KeyPointClassifier
-from sklearn.metrics import confusion_matrix
-import tensorflow as tf
 import random
 import time
+
+import cv2
+import matplotlib.pyplot as plt
+import mediapipe as mp
+import numpy as np
+import pandas as pd
+import streamlit as st
+import tensorflow as tf
+from keras.callbacks import EarlyStopping, ModelCheckpoint
+from keras.layers import Dense, Dropout
+from keras.models import Sequential, load_model
+from sklearn.metrics import confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from streamlit_option_menu import option_menu
+
+from keypoint_classifier import KeyPointClassifier
 
 
 def main():
