@@ -139,7 +139,7 @@ def main():
         classifier.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
         ##train preprocessed data
         if st.button('TRAIN'):
-            classifier.fit(x_train,y_train,epochs=10, batch_size=64,callbacks=[cp_callback,es_callback],validation_data=(x_test,y_test))
+            classifier.fit(x_train,y_train,epochs=100, batch_size=32,callbacks=[cp_callback,es_callback],validation_data=(x_test,y_test))
             Accuracy =classifier.evaluate(x_test,y_test)
             st.write('Training Successful with Accuracy:', Accuracy[1])
         
