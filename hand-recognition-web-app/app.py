@@ -53,6 +53,19 @@ def main():
         keypoint_labels = csv.reader(f)
         keypoint_labels = [row[0] for row in keypoint_labels]
 
+    # reading dataframe from csv file
+    dataframe = pd.read_csv("keypoints.csv", header=None)
+    x = dataframe.iloc[:, 1:43].values
+    x = pd.DataFrame(x)
+    y = dataframe[0]
+
+    # splitting dataset
+    x_train, x_test, y_train, y_test = dataPreprocessing(x, y)
+
+    # performing pearsons correlation on x_train
+    corr_features = correlation(x_train, 0.85)
+    print(corr_features)
+
     if select == "Collect Data Points":
         st.markdown("### Capture Data Points")
         ##label input
@@ -132,18 +145,21 @@ def main():
         num_classes = len(keypoint_labels)
         st.write("Number of classes:", num_classes)
         ## reading data points
-        dataframe = pd.read_csv("landmarks.csv", header=None)
-        x = dataframe.iloc[:, 1:43].values
-        y = dataframe.iloc[:, 0].values
         with st.expander("View Data Frames"):
             ##sumarize the df
             st.text("Dataframe")
             st.dataframe(dataframe)
+            st.dataframe(x_train)
         ##preprocess data
-        x_train, x_test, y_train, y_test = dataPreprocessing(x, y)
+        # x_train, x_test, y_train, y_test = dataPreprocessing(x, y)
+        x_train = x_train.drop(corr_features, axis=1)
+        x_test = x_test.drop(corr_features, axis=1)
+        ##Normalizing handlandmarks between 0 and 1
+        sc = MinMaxScaler(feature_range=(0, 1))
+        x_train = sc.fit_transform(x_train)
+        x_test = sc.fit_transform(x_test)
+
         ##build and compile
-        ##
-        ##set a button to build nn
         build_nn(num_classes, classifier)
         cp_callback = ModelCheckpoint(
             saved_model_path, verbose=1, save_weights_only=False
@@ -167,9 +183,9 @@ def main():
             Accuracy = classifier.evaluate(x_test, y_test)
             st.write("Training Successful with Accuracy:", Accuracy[1])
 
-        ## saving the model
+        # ## saving the model
         model = load_model(saved_model_path)
-        ##making predictions
+        # ##making predictions
         y_pred = model.predict(x_test)
         y_pred = np.argmax(y_pred, axis=-1)
         # Work on showing confusion matrix
@@ -177,9 +193,9 @@ def main():
         plot_cm = st.sidebar.checkbox("Plot Confusion Matrix")
         if plot_cm:
             plot_confusion_matrix(cm, classes=keypoint_labels)
-            # st.pyplot()
+        #     # st.pyplot()
 
-        model.save(saved_model_path)
+        # model.save(saved_model_path)
         save_tflite = st.button("Save tflite")
         if save_tflite:
             converter = tf.lite.TFLiteConverter.from_keras_model(model)
@@ -227,6 +243,19 @@ def main():
                             ##capturing landmarks
                             handlandmarks = find_position(frame, hand_landmarks)
                             processed_landmark_list = inference_lms(handlandmarks)
+                            processed_landmark_list = pd.DataFrame(
+                                [processed_landmark_list]
+                            )
+                            processed_landmark_list = processed_landmark_list.drop(
+                                corr_features, axis=1
+                            )
+                            print(type(processed_landmark_list))
+                            processed_landmark_list = list(
+                                itertools.chain.from_iterable(
+                                    processed_landmark_list.values.tolist()
+                                )
+                            )
+                            print(processed_landmark_list)
                             # collecting hand sign index
                             hand_sign_id = keypoint_classifier(processed_landmark_list)
                             ##adding info text
@@ -242,22 +271,31 @@ def main():
 ##---------------------------------------DATAPROCESSING AND BUILDING NEURAL NETWORK-----------------------------
 def dataPreprocessing(x, y):
     ##Normalizing handlandmarks between 0 and 1
-    sc = MinMaxScaler(feature_range=(0, 1))
-    x_scaled = sc.fit_transform(x)
+    # sc = MinMaxScaler(feature_range=(0, 1))
+    # x_scaled = sc.fit_transform(x)
     ##Splitting handlandmarks to training and test sets
     x_train, x_test, y_train, y_test = train_test_split(
-        x_scaled, y, test_size=0.2, random_state=0
+        x, y, test_size=0.2, random_state=0
     )
     return x_train, x_test, y_train, y_test
 
 
 def build_nn(num_classes, classifier):
-    classifier.add(Dense(42, activation="relu", input_shape=(42,)))
-    classifier.add(Dropout(0.2))
-    classifier.add(Dense(20, activation="relu"))
-    classifier.add(Dropout(0.4))
-    classifier.add(Dense(10, activation="relu"))
+    classifier.add(Dense(42, activation="relu", input_shape=(7,)))
+    classifier.add(Dense(32, activation="relu"))
     classifier.add(Dense(num_classes, activation="softmax"))
+
+
+# pearson correlation
+def correlation(dataset, threshold):
+    col_cor = set()
+    corr_matrix = dataset.corr()
+    for i in range(len(corr_matrix.columns)):
+        for j in range(i):
+            if abs(corr_matrix.iloc[i, j]) > threshold:
+                colname = corr_matrix.columns[i]
+                col_cor.add(colname)
+    return col_cor
 
 
 ###------------------------------------------CONFUSION MATRIX PLOT--------------------------------------------------
@@ -377,8 +415,6 @@ def inference_lms(landmarklist):
 
 ##function to augment landmark points
 def augment(number, landmark, num_shift):
-    # we are calling funtion inside the while loop
-
     def _shift_diagnol_up(number, landmark):
         for x in range(num_shift):
             new_point = np.reshape(random.randint(-100, 100), (1, 1)) + landmark
@@ -418,7 +454,6 @@ def augment(number, landmark, num_shift):
             landmark = new_point
 
     def _shift_down(number, landmark):
-        # if number >-1:
         for x in range(num_shift):
             new_point = [[0, random.randint(-50, 50)]] + landmark
             ##writing into csv target file
