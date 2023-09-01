@@ -49,22 +49,18 @@ def main():
     if select == "Home":
         st.title("Hand Gesture Recognition web-app")
 
-    with open("label.csv", encoding="utf-8-sig") as f:
-        keypoint_labels = csv.reader(f)
-        keypoint_labels = [row[0] for row in keypoint_labels]
+    # with open("label.csv", encoding="utf-8-sig") as f:
+    #     keypoint_labels = csv.reader(f)
+    #     keypoint_labels = [row[0] for row in keypoint_labels]
 
     # reading dataframe from csv file
-    dataframe = pd.read_csv("keypoints.csv", header=None)
+    dataframe = pd.read_csv("landmarks.csv", header=None)
     x = dataframe.iloc[:, 1:43].values
     x = pd.DataFrame(x)
     y = dataframe[0]
 
     # splitting dataset
     x_train, x_test, y_train, y_test = dataPreprocessing(x, y)
-
-    # performing pearsons correlation on x_train
-    corr_features = correlation(x_train, 0.85)
-    print(corr_features)
 
     if select == "Collect Data Points":
         st.markdown("### Capture Data Points")
@@ -88,7 +84,6 @@ def main():
         # shift_intensity = st.sidebar.slider('shift intensity',1,10,step=int(1))
         num_of_shift = int(st.sidebar.number_input("number of augmented data points"))
         if run_camera:
-
             capture = st.button("CAPTURE")
             ##creating a select box
             number = keypoint_labels.index(
@@ -150,10 +145,7 @@ def main():
             st.text("Dataframe")
             st.dataframe(dataframe)
             st.dataframe(x_train)
-        ##preprocess data
-        # x_train, x_test, y_train, y_test = dataPreprocessing(x, y)
-        x_train = x_train.drop(corr_features, axis=1)
-        x_test = x_test.drop(corr_features, axis=1)
+
         ##Normalizing handlandmarks between 0 and 1
         sc = MinMaxScaler(feature_range=(0, 1))
         x_train = sc.fit_transform(x_train)
@@ -246,9 +238,6 @@ def main():
                             processed_landmark_list = pd.DataFrame(
                                 [processed_landmark_list]
                             )
-                            processed_landmark_list = processed_landmark_list.drop(
-                                corr_features, axis=1
-                            )
                             print(type(processed_landmark_list))
                             processed_landmark_list = list(
                                 itertools.chain.from_iterable(
@@ -281,21 +270,9 @@ def dataPreprocessing(x, y):
 
 
 def build_nn(num_classes, classifier):
-    classifier.add(Dense(42, activation="relu", input_shape=(7,)))
-    classifier.add(Dense(32, activation="relu"))
+    classifier.add(Dense(42, activation="relu", input_shape=(42,)))
+    classifier.add(Dense(50, activation="relu"))
     classifier.add(Dense(num_classes, activation="softmax"))
-
-
-# pearson correlation
-def correlation(dataset, threshold):
-    col_cor = set()
-    corr_matrix = dataset.corr()
-    for i in range(len(corr_matrix.columns)):
-        for j in range(i):
-            if abs(corr_matrix.iloc[i, j]) > threshold:
-                colname = corr_matrix.columns[i]
-                col_cor.add(colname)
-    return col_cor
 
 
 ###------------------------------------------CONFUSION MATRIX PLOT--------------------------------------------------
@@ -384,7 +361,7 @@ def find_position(frame, landmarks):
 ##preprocessing the landmarks
 def pre_processing_lms(number, landmarklist, num_shift):
     temp_lms = copy.deepcopy(landmarklist)
-    # print(type(temp_lms))
+    # print(type(temp_lms))q
     # getting the relative coordinates
     base_x, base_y = 0, 0
     for index, landmark_point in enumerate(temp_lms):
